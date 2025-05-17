@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   User,
   Phone,
@@ -9,66 +9,12 @@ import {
   Edit,
   Printer,
   Download,
+  Search,
 } from 'lucide-react';
-
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-const patient = {
-  id: 'PK-2025-01',
-  name: 'Ahmed Khan',
-  age: 52,
-  gender: 'Male',
-  bloodGroup: 'B+',
-  phone: '+92 300 1234567',
-  email: 'ahmed.khan@lahorehospital.pk',
-  address: 'House 45, G-9, Islamabad, Pakistan',
-  emergencyContact: 'Farah Khan (Wife) - +92 301 7654321',
-  registrationDate: '2024-11-05',
-  allergies: ['Dust', 'Shellfish'],
-  vitalSigns: [
-    {
-      date: '2025-05-15',
-      bp: '135/85',
-      pulse: 76,
-      temp: '98.7°F',
-      respRate: 18,
-      weight: '82 kg',
-    },
-  ],
-  medicalHistory: [
-    { condition: 'Hypertension', diagnosedDate: '2019-06-12', status: 'Ongoing' },
-    { condition: 'Gallbladder Removal', diagnosedDate: '2022-02-20', status: 'Resolved' },
-  ],
-  currentMedications: [
-    { name: 'Amlodipine', dosage: '5mg', frequency: 'Once daily' },
-  ],
-  labResults: [
-    {
-      date: '2025-05-15',
-      test: 'CBC',
-      result: 'Normal',
-      notes: 'Hemoglobin and WBC levels within normal range',
-    },
-  ],
-  prescriptions: [
-    {
-      date: '2025-05-15',
-      medication: 'Amlodipine',
-      dosage: '5mg',
-      instructions: 'Once daily after breakfast',
-      prescribedBy: 'Dr. Hina Malik',
-    },
-  ],
-  recentVisits: [
-    {
-      date: '2025-05-15',
-      doctor: 'Dr. Hina Malik',
-      department: 'Internal Medicine',
-      reason: 'Hypertension follow-up',
-    },
-  ],
-};
+import { patients } from '../../data/patients'; 
 
 function InfoItem({ icon: Icon, label, value }) {
   return (
@@ -84,12 +30,32 @@ function InfoItem({ icon: Icon, label, value }) {
 
 export default function DetailPatient() {
   const printRef = useRef();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredPatients, setFilteredPatients] = useState(patients);
+  const [selectedPatient, setSelectedPatient] = useState(patients[0]);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredPatients(patients);
+    } else {
+      const filtered = patients.filter(p =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredPatients(filtered);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (!filteredPatients.includes(selectedPatient)) {
+      setSelectedPatient(filteredPatients[0] || null);
+    }
+  }, [filteredPatients, selectedPatient]);
 
   const handlePrint = async () => {
     const element = printRef.current;
     if (!element) return;
 
-    // Use html2canvas to capture
     const canvas = await html2canvas(element, { scale: 2 });
     const imgData = canvas.toDataURL('image/png');
 
@@ -100,21 +66,23 @@ export default function DetailPatient() {
     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`${patient.name.replace(/\s/g, '_')}_Report.pdf`);
+    pdf.save(`${selectedPatient.name.replace(/\s/g, '_')}_Report.pdf`);
   };
+
+  if (!selectedPatient) return <p>No patient found.</p>;
 
   const tableSections = [
     {
       title: 'Vital Signs',
       headers: ['Date', 'BP', 'Pulse', 'Temp', 'Resp Rate', 'Weight'],
-      rows: patient.vitalSigns.map(v => [
+      rows: selectedPatient.vitalSigns.map(v => [
         v.date, v.bp, `${v.pulse} bpm`, v.temp, `${v.respRate} /min`, v.weight,
       ]),
     },
     {
       title: 'Medical History',
       headers: ['Condition', 'Diagnosed Date', 'Status'],
-      rows: patient.medicalHistory.map(h => [
+      rows: selectedPatient.medicalHistory.map(h => [
         h.condition,
         h.diagnosedDate,
         <span
@@ -131,12 +99,12 @@ export default function DetailPatient() {
     {
       title: 'Current Medications',
       headers: ['Medication', 'Dosage', 'Frequency'],
-      rows: patient.currentMedications.map(m => [m.name, m.dosage, m.frequency]),
+      rows: selectedPatient.currentMedications.map(m => [m.name, m.dosage, m.frequency]),
     },
     {
       title: 'Lab Results',
       headers: ['Date', 'Test', 'Result', 'Notes'],
-      rows: patient.labResults.map(l => [
+      rows: selectedPatient.labResults.map(l => [
         l.date,
         l.test,
         <span
@@ -154,7 +122,7 @@ export default function DetailPatient() {
     {
       title: 'Prescriptions',
       headers: ['Date', 'Medication', 'Dosage', 'Instructions', 'Prescribed By'],
-      rows: patient.prescriptions.map(p => [
+      rows: selectedPatient.prescriptions.map(p => [
         p.date,
         p.medication,
         p.dosage,
@@ -165,12 +133,53 @@ export default function DetailPatient() {
     {
       title: 'Recent Visits',
       headers: ['Date', 'Doctor', 'Department', 'Reason'],
-      rows: patient.recentVisits.map(r => [r.date, r.doctor, r.department, r.reason]),
+      rows: selectedPatient.recentVisits.map(r => [r.date, r.doctor, r.department, r.reason]),
     },
   ];
 
   return (
     <div className="p-6">
+      {/* Search bar */}
+      <div className="mb-6">
+        <label htmlFor="search" className="sr-only">
+          Search Patients
+        </label>
+        <div className="relative text-gray-400 focus-within:text-gray-600">
+          <input
+            id="search"
+            type="search"
+            placeholder="Search by name or ID"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-main-color"
+          />
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search size={18} />
+          </div>
+        </div>
+
+        {/* Suggestion dropdown */}
+        {searchTerm.trim() !== '' && filteredPatients.length > 0 && (
+          <ul className="border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto bg-white z-10 absolute ">
+            {filteredPatients.map(p => (
+              <li
+                key={p.id}
+                onClick={() => {
+                  setSelectedPatient(p);
+                  setSearchTerm(p.name);
+                }}
+                className="px-4 py-2 cursor-pointer hover:bg-main-color hover:text-white"
+              >
+                {p.name} ({p.id})
+              </li>
+            ))}
+          </ul>
+        )}
+        {searchTerm.trim() !== '' && filteredPatients.length === 0 && (
+          <p className="mt-1 text-sm text-red-500">No patients found</p>
+        )}
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">Patient Details</h1>
         <div className="flex space-x-2">
@@ -180,7 +189,7 @@ export default function DetailPatient() {
           >
             <Edit size={18} className="mr-2" /> Edit Patient
           </button>
-          
+
           <button
             onClick={handlePrint}
             className="bg-main-color text-white px-4 py-2 rounded-md flex items-center"
@@ -198,24 +207,24 @@ export default function DetailPatient() {
               <div className="bg-white rounded-full p-3 mb-3">
                 <User size={40} className="text-blue-500" />
               </div>
-              <h2 className="text-xl font-bold text-white">{patient.name}</h2>
-              <p className="text-blue-100">Patient ID: {patient.id}</p>
+              <h2 className="text-xl font-bold text-white">{selectedPatient.name}</h2>
+              <p className="text-blue-100">Patient ID: {selectedPatient.id}</p>
             </div>
 
             <div className="p-6 space-y-4">
-              <InfoItem icon={User} label="Gender" value={patient.gender} />
-              <InfoItem icon={Calendar} label="Age" value={`${patient.age} years`} />
-              <InfoItem icon={Activity} label="Blood Group" value={patient.bloodGroup} />
-              <InfoItem icon={Phone} label="Phone" value={patient.phone} />
-              <InfoItem icon={Mail} label="Email" value={patient.email} />
-              <InfoItem icon={MapPin} label="Address" value={patient.address} />
-              <InfoItem icon={Phone} label="Emergency Contact" value={patient.emergencyContact} />
-              <InfoItem icon={Calendar} label="Registration Date" value={patient.registrationDate} />
+              <InfoItem icon={User} label="Gender" value={selectedPatient.gender} />
+              <InfoItem icon={Calendar} label="Age" value={`${selectedPatient.age} years`} />
+              <InfoItem icon={Activity} label="Blood Group" value={selectedPatient.bloodGroup} />
+              <InfoItem icon={Phone} label="Phone" value={selectedPatient.phone} />
+              <InfoItem icon={Mail} label="Email" value={selectedPatient.email} />
+              <InfoItem icon={MapPin} label="Address" value={selectedPatient.address} />
+              <InfoItem icon={Phone} label="Emergency Contact" value={selectedPatient.emergencyContact} />
+              <InfoItem icon={Calendar} label="Registration Date" value={selectedPatient.registrationDate} />
 
               <div>
                 <h3 className="font-bold mb-2">Allergies</h3>
                 <div className="flex flex-wrap gap-2">
-                  {patient.allergies.map((a, i) => (
+                  {selectedPatient.allergies.map((a, i) => (
                     <span
                       key={i}
                       className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm"

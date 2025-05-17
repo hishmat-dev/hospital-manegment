@@ -1,37 +1,40 @@
-// Same imports as before
 import { useState } from "react";
 import {
-  User, Save, X, Plus, Trash2,
+  User,
+  Save,
+  X,
+  Plus,
+  Trash2,
+  Search,
 } from "lucide-react";
-
-const initialPatient = {
-  id: "P-2002",
-  name: "Ali Khan",
-  age: 38,
-  gender: "Male",
-  bloodGroup: "B+",
-  phone: "+92 300 1234567",
-  email: "ali.khan@pakistanmail.com",
-  address: "45 Garden Town, Lahore, Pakistan",
-  emergencyContact: "Sara Khan (Wife) - +92 300 7654321",
-  registrationDate: "2024-12-10",
-  medicalHistory: [
-    { condition: "Hypertension", diagnosedDate: "2020-06-10", status: "Ongoing" },
-  ],
-  allergies: ["Dust", "Aspirin"],
-  currentMedications: [
-    { name: "Amlodipine", dosage: "5mg", frequency: "Once daily" },
-  ],
-  recentVisits: [
-    { date: "2025-04-10", doctor: "Dr. Farah Malik", department: "Cardiology", reason: "Blood Pressure Check" },
-    { date: "2025-01-15", doctor: "Dr. Kamran Siddiqi", department: "General Medicine", reason: "Fever & Body Aches" },
-  ],
-};
+import { patients } from "../../data/patients";
 
 export default function Profile() {
-  const [patient, setPatient] = useState(initialPatient);
+  const [patientss] = useState(patients);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredPatients, setFilteredPatients] = useState([]);
+  const [patient, setPatient] = useState(patients[0]);
+  const [formData, setFormData] = useState(patients[0]);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState(initialPatient);
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    const results = patientss.filter(
+      (p) =>
+        p.name.toLowerCase().includes(value.toLowerCase()) ||
+        p.id.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredPatients(results);
+  };
+
+  const handleSelectPatient = (p) => {
+    setPatient(p);
+    setFormData(p);
+    setSearchTerm("");
+    setFilteredPatients([]);
+    setEditMode(false);
+  };
 
   const handleBasicChange = (e) => {
     const { name, value } = e.target;
@@ -76,9 +79,35 @@ export default function Profile() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Patient Profile</h1>
-      <div className="bg-white shadow rounded-lg overflow-hidden">
 
-        {/* Header */}
+      {/* Search */}
+      <div className="mb-4 relative max-w-md">
+        <div className="flex items-center border border-gray-300 rounded-md px-3 py-2">
+          <Search size={16} className="text-gray-400 mr-2" />
+          <input
+            type="text"
+            placeholder="Search by name or ID..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="w-full outline-none text-sm"
+          />
+        </div>
+        {searchTerm && filteredPatients.length > 0 && (
+          <ul className="absolute z-10 bg-white border border-gray-300 mt-1 rounded-md w-full shadow">
+            {filteredPatients.map((p) => (
+              <li
+                key={p.id}
+                onClick={() => handleSelectPatient(p)}
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+              >
+                {p.name} ({p.id})
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="bg-main-color p-6 flex justify-between items-center text-white">
           <div className="flex items-center">
             <User size={40} className="mr-4" />
@@ -98,7 +127,9 @@ export default function Profile() {
                 </button>
               </>
             ) : (
-              <button onClick={() => setEditMode(true)} className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium">Edit Profile</button>
+              <button onClick={() => setEditMode(true)} className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium">
+                Edit Profile
+              </button>
             )}
           </div>
         </div>
