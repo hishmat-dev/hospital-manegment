@@ -67,24 +67,7 @@ export default function AddPatient() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Add New Patient</h1>
-        <div className="flex space-x-2">
-          <button
-            type="submit"
-            form="patient-form"
-            className="bg-main-color text-white px-4 py-2 rounded-md flex items-center"
-          >
-            <Save size={18} className="mr-2" />
-            Save Patient
-          </button>
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md flex items-center"
-          >
-            <X size={18} className="mr-2" />
-            Cancel
-          </button>
-        </div>
+        
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">

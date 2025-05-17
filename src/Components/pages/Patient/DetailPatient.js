@@ -180,14 +180,9 @@ export default function DetailPatient() {
           >
             <Edit size={18} className="mr-2" /> Edit Patient
           </button>
+          
           <button
             onClick={handlePrint}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md flex items-center"
-          >
-            <Printer size={18} className="mr-2" /> Print
-          </button>
-          <button
-            onClick={() => alert('Export feature coming soon!')}
             className="bg-main-color text-white px-4 py-2 rounded-md flex items-center"
           >
             <Download size={18} className="mr-2" /> Export
